@@ -2,29 +2,128 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ChatGPT 翻譯與文法修正</title>
+  <title>Cason Translate</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-    textarea { width: 100%; height: 150px; margin-top: 10px; }
-    button { margin: 10px 5px 0 0; padding: 10px 15px; font-size: 16px; }
-    #result { margin-top: 20px; background: white; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 40px;
+      background: linear-gradient(135deg, #ece9e6, #ffffff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 700px;
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-top: 10px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    select {
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+    }
+
+    .buttons {
+      margin-top: 15px;
+    }
+
+    button {
+      background: #4A90E2;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-right: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #357ABD;
+    }
+
+    #result {
+      margin-top: 20px;
+      background: #f8f8f8;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      white-space: pre-wrap;
+      font-size: 16px;
+      position: relative;
+    }
+
+    #copyBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 10px;
+      background: #999;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #copyBtn:hover {
+      background: #666;
+    }
   </style>
 </head>
 <body>
   <h1>ChatGPT 翻譯 & 文法修正</h1>
-  <label for="inputText">輸入文字：</label>
-  <textarea id="inputText" placeholder="請輸入要翻譯或修正的文字..."></textarea>
+  <div class="container">
+    <label for="inputText">輸入文字：</label>
+    <textarea id="inputText" placeholder="請輸入要翻譯或修正的文字..."></textarea>
 
-  <div>
-    <button onclick="translateText()">翻譯成英文</button>
-    <button onclick="fixGrammar()">修正文法</button>
+    <div style="margin-top: 10px;">
+      <label for="direction">翻譯方向：</label>
+      <select id="direction">
+        <option value="zh-en">中文 → 英文</option>
+        <option value="en-zh">英文 → 中文</option>
+      </select>
+    </div>
+
+    <div class="buttons">
+      <button onclick="translateText()">翻譯</button>
+      <button onclick="fixGrammar()">修正文法</button>
+    </div>
+
+    <div id="result">
+      <button id="copyBtn" onclick="copyResult()">複製</button>
+    </div>
   </div>
 
-  <div id="result"></div>
-
   <script>
-    const API_ENDPOINT = 'https://cason-translate.onrender.com/chat'; // 你的 Node.js server 位址
+    const API_ENDPOINT = 'https://cason-translate.onrender.com/chat'; // ⚠️ 替換成你的實際網址
 
     async function callChatGPT(prompt) {
       try {
@@ -37,24 +136,42 @@
 
         const result = response.data.result;
         document.getElementById('result').innerText = result;
+        document.getElementById('result').appendChild(document.getElementById('copyBtn'));
       } catch (error) {
         console.error('錯誤:', error);
-        document.getElementById('result').innerText = '⚠️ 發生錯誤，請檢查後端伺服器是否啟動。';
+        const msg = error.response?.data?.detail || error.message || '未知錯誤';
+        document.getElementById('result').innerText = `⚠️ 發生錯誤：${msg}`;
       }
     }
 
     function translateText() {
-      const input = document.getElementById('inputText').value;
-      if (input.trim() === '') return alert('請輸入內容');
-      const prompt = `請將以下中文翻譯成自然的英文：\n${input}`;
+      const input = document.getElementById('inputText').value.trim();
+      const direction = document.getElementById('direction').value;
+      if (!input) return alert('請輸入內容');
+
+      let prompt = '';
+      if (direction === 'zh-en') {
+        prompt = `請將以下中文翻譯成自然的英文：\n${input}`;
+      } else {
+        prompt = `請將以下英文翻譯成自然的中文：\n${input}`;
+      }
       callChatGPT(prompt);
     }
 
     function fixGrammar() {
-      const input = document.getElementById('inputText').value;
-      if (input.trim() === '') return alert('請輸入內容');
+      const input = document.getElementById('inputText').value.trim();
+      if (!input) return alert('請輸入內容');
       const prompt = `請幫我修正下面這段英文的文法錯誤，並提供修正後的版本：\n${input}`;
       callChatGPT(prompt);
+    }
+
+    function copyResult() {
+      const resultText = document.getElementById('result').innerText;
+      navigator.clipboard.writeText(resultText).then(() => {
+        alert('已複製到剪貼簿！');
+      }, () => {
+        alert('複製失敗，請手動複製');
+      });
     }
   </script>
 </body>
