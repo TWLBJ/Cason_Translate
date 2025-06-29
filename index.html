@@ -40,12 +40,25 @@
       box-sizing: border-box;
     }
 
-    select {
-      padding: 8px;
-      font-size: 16px;
-      border-radius: 8px;
+    .direction-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .direction-button {
+      padding: 8px 16px;
       border: 1px solid #ccc;
-      margin-right: 10px;
+      border-radius: 20px;
+      background-color: #eee;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .direction-button.active {
+      background-color: #4A90E2;
+      color: white;
+      border-color: #4A90E2;
     }
 
     .buttons {
@@ -77,53 +90,66 @@
       white-space: pre-wrap;
       font-size: 16px;
       position: relative;
+      min-height: 50px;
     }
 
     #copyBtn {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 5px 10px;
+      top: 50%;
+      right: 15px;
+      transform: translateY(-50%);
+      padding: 6px 14px;
       font-size: 14px;
       border-radius: 10px;
-      background: #999;
+      background: #4A90E2;
       color: white;
       border: none;
       cursor: pointer;
       transition: background 0.3s;
+      display: none;
+    }
+
+    #copyBtn.copied {
+      background: #28a745;
     }
 
     #copyBtn:hover {
-      background: #666;
+      background: #357ABD;
     }
   </style>
 </head>
 <body>
-  <h1>ChatGPT 翻譯 & 文法修正</h1>
+  <h1>Cason Translate</h1>
   <div class="container">
     <label for="inputText">輸入文字：</label>
     <textarea id="inputText" placeholder="請輸入要翻譯或修正的文字..."></textarea>
 
-    <div style="margin-top: 10px;">
-      <label for="direction">翻譯方向：</label>
-      <select id="direction">
-        <option value="zh-en">中文 → 英文</option>
-        <option value="en-zh">英文 → 中文</option>
-      </select>
+    <div class="direction-buttons">
+      <div id="btn-en-zh" class="direction-button active" onclick="setDirection('en-zh')">英文 → 中文</div>
+      <div id="btn-zh-en" class="direction-button" onclick="setDirection('zh-en')">中文 → 英文</div>
     </div>
 
     <div class="buttons">
       <button onclick="translateText()">翻譯</button>
-      <button onclick="fixGrammar()">修正文法</button>
+      <button onclick="fixGrammar()">修正英文文法</button>
     </div>
 
     <div id="result">
+      <div id="resultText"></div>
       <button id="copyBtn" onclick="copyResult()">複製</button>
     </div>
   </div>
 
   <script>
-    const API_ENDPOINT = 'https://cason-translate.onrender.com/chat'; // ⚠️ 替換成你的實際網址
+    const API_ENDPOINT = 'https://cason-translate.onrender.com/chat';
+    let currentDirection = 'en-zh';
+
+    function setDirection(dir) {
+      currentDirection = dir;
+      document.getElementById('btn-en-zh').classList.remove('active');
+      document.getElementById('btn-zh-en').classList.remove('active');
+      document.getElementById('btn-' + dir).classList.add('active');
+    }
 
     async function callChatGPT(prompt) {
       try {
@@ -135,22 +161,27 @@
         });
 
         const result = response.data.result;
-        document.getElementById('result').innerText = result;
-        document.getElementById('result').appendChild(document.getElementById('copyBtn'));
+        const resultTextDiv = document.getElementById('resultText');
+        const copyBtn = document.getElementById('copyBtn');
+
+        resultTextDiv.textContent = result;
+        copyBtn.style.display = 'inline-block';
+        copyBtn.classList.remove('copied');
+        copyBtn.innerText = '複製';
       } catch (error) {
         console.error('錯誤:', error);
         const msg = error.response?.data?.detail || error.message || '未知錯誤';
-        document.getElementById('result').innerText = `⚠️ 發生錯誤：${msg}`;
+        document.getElementById('resultText').textContent = `⚠️ 發生錯誤：${msg}`;
+        document.getElementById('copyBtn').style.display = 'none';
       }
     }
 
     function translateText() {
       const input = document.getElementById('inputText').value.trim();
-      const direction = document.getElementById('direction').value;
       if (!input) return alert('請輸入內容');
 
       let prompt = '';
-      if (direction === 'zh-en') {
+      if (currentDirection === 'zh-en') {
         prompt = `請將以下中文翻譯成自然的英文：\n${input}`;
       } else {
         prompt = `請將以下英文翻譯成自然的中文：\n${input}`;
@@ -166,9 +197,15 @@
     }
 
     function copyResult() {
-      const resultText = document.getElementById('result').innerText;
+      const resultText = document.getElementById('resultText').textContent;
+      const copyBtn = document.getElementById('copyBtn');
       navigator.clipboard.writeText(resultText).then(() => {
-        alert('已複製到剪貼簿！');
+        copyBtn.classList.add('copied');
+        copyBtn.innerText = '✅ 已複製';
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.innerText = '複製';
+        }, 2000);
       }, () => {
         alert('複製失敗，請手動複製');
       });
